@@ -1,5 +1,66 @@
 USE LoanModule
 
+set ansi_nulls on
+	go
+	set quoted_identifier on
+	go
+	create or alter  procedure [dbo].[CalculateRRSOAndroid] @amount float, @number_of_loan_installment int, @loan_type int, @loan_insurance_type INT
+	as begin
+			declare @tab table(col1 float)
+			declare @rrso float, @percentage int, @insurance_percentage int, @commission int = 1
+			select @percentage = coalesce((select top 1 percentage_value from LoanType where loan_type_id = @loan_type), 0)
+			select @insurance_percentage = coalesce((select top 1 percentage_value from LoanInsuranceType where loan_insurance_type_id = @loan_insurance_type), 0)
+			select @rrso = @percentage + @commission * (12 / @number_of_loan_installment) + @insurance_percentage * 12
+			insert @tab values(ROUND(@rrso, 2))
+			select * from @tab
+	end
+	go
+	use LoanModule
+	go
+	alter database LoanModule set read_write 
+	go
+
+
+	/* Execute CalculateLoanInstallment */
+	--USE LoanModule
+	--GO 
+	--DECLARE @result float
+	--EXEC @result = dbo.CalculateRRSOAndroid @amount= 15000, @number_of_loan_installment= 15, @loan_type= 1, @loan_insurance_type = 1
+	--PRINT(@result)
+
+
+/* Procedura obliczenia raty kredytu */
+/**
+Procedura oblicza wartoœæ raty kredytu. 
+**/
+
+	set ansi_nulls on
+	go
+	set quoted_identifier on
+	go
+	create or alter  procedure [dbo].[CalculateLoanInstallmentAndroid] @amount float, @number_of_loan_installment int, @rrso float
+	as begin
+			declare @tab table(col1 float)
+			declare @loan_installment float, @q float;
+			select @q=1+@rrso/12/100
+			select @loan_installment =  @amount*power(@q, @number_of_loan_installment)*(@q-1)/(power(@q,@number_of_loan_installment) -1)
+			insert @tab values (ROUND(@loan_installment, 2))
+			select * from @tab
+	end
+	go
+	use LoanModule
+	go
+	alter database LoanModule set read_write 
+	go
+
+	/* Execute CalculateLoanInstallment */
+--	USE LoanModule
+--	GO 
+--	DECLARE @result float
+--	EXEC @result = dbo.CalculateLoanInstallmentAndroid @amount= 15000, @number_of_loan_installment= 48,  @rrso =13
+--	PRINT(@result)
+--USE LoanModule
+
 /* Procedura obliczenia rrso */
 /**
 Procedura oblicza rrso.
@@ -26,11 +87,11 @@ Przyjmuj ¿e prowizja to 1%
 	go
 
 	/* Execute CalculateLoanInstallment */
-	USE LoanModule
-	GO 
-	DECLARE @result float
-	EXEC @result = dbo.CalculateRRSO @amount= 5000, @number_of_loan_installment= 16, @loan_type= 2, @loan_insurance_type = 4
-	PRINT(@result)
+	--USE LoanModule
+	--GO 
+	--DECLARE @result float
+	--EXEC @result = dbo.CalculateRRSO @amount= 5000, @number_of_loan_installment= 16, @loan_type= 2, @loan_insurance_type = 4
+	--PRINT(@result)
 
 
 /* Procedura obliczenia raty kredytu */
@@ -56,11 +117,11 @@ Procedura oblicza wartoœæ raty kredytu.
 	go
 
 	/* Execute CalculateLoanInstallment */
-	USE LoanModule
-	GO 
-	DECLARE @result float
-	EXEC @result = dbo.CalculateLoanInstallment @amount= 5000, @number_of_loan_installment= 16,  @rrso =79
-	PRINT(@result)
+	--USE LoanModule
+	--GO 
+	--DECLARE @result float
+	--EXEC @result = dbo.CalculateLoanInstallment @amount= 5000, @number_of_loan_installment= 16,  @rrso =79
+	--PRINT(@result)
 
 /* Procedura dodania nowego ubezpieczenia */
 /** 
@@ -92,10 +153,10 @@ ALTER DATABASE LoanModule SET READ_WRITE
 GO
 
 	/* Execute AddLoanInsurence */
-	USE LoanModule
-	GO  
-	EXEC dbo.AddLoanInsurence @loan_amount=10000, @loanInsurenceType=2, @loanId=1,  @number_of_loan_installment=2
-	SELECT * FROM LoanInsurance 
+	--USE LoanModule
+	--GO  
+	--EXEC dbo.AddLoanInsurence @loan_amount=10000, @loanInsurenceType=2, @loanId=1,  @number_of_loan_installment=2
+	--SELECT * FROM LoanInsurance 
 
 /* Procedura ustawienia nowego ubezpieczenia */
 /** 
@@ -112,7 +173,7 @@ AS BEGIN
 		SELECT @loan_amount = coalesce((SELECT TOP 1 amount FROM loan WHERE loan_id = @loanId), NULL) 
 		SELECT @loan_type = coalesce((SELECT TOP 1 loan_type FROM loan WHERE loan_id = @loanId), NULL)
 		SELECT @loan_current_insurance = coalesce((SELECT TOP 1 loan_insurance FROM loan WHERE loan_id = @loanId), NULL)
-		if(coalesce((SELECT TOP 1 loan_insurance_type FROM LoanInsurance WHERE loan_insurance_id = @loan_current_insurance), NULL) !=4)
+		if(coalesce((SELECT TOP 1 loan_insurance_type FROM LoanInsurance WHERE loan_insurance_id = @loan_current_insurance), NULL) =4)
 			BEGIN
 				exec @ID = AddLoanInsurence  @loan_amount, @loan_insurance_type, @loanId, @loan_type
 				UPDATE Loan SET loan_insurance = @ID WHERE loan_id = @loanId
@@ -127,11 +188,11 @@ ALTER DATABASE LoanModule SET READ_WRITE
 GO
 
 	/* Execute SetLoanInsurence */
-	USE LoanModule
-	GO  
-	EXEC dbo.SetLoanInsurence @loanId=0, @loan_insurance_type=1
-	SELECT * FROM LoanInsurance 
-	SELECT * FROM Loan 
+	--USE LoanModule
+	--GO  
+	--EXEC dbo.SetLoanInsurence @loanId=12, @loan_insurance_type=1
+	--SELECT * FROM LoanInsurance 
+	--SELECT * FROM Loan 
 
 /* Procedura wnioskowania o kredyt */
 /** 
@@ -139,7 +200,6 @@ Procedura dodaje wniosek o kredyt.
 Umo¿liwia ona na ustawienie rodzaju ubezpieczenia. Jesli nie jest ustawiony ¿adny typ ubezpieczenia ustawia go na NONE.
 Oblicza wartoœæ ubezpieczneia na podstawie wartoœci kredytu i procentu jaki ustawiny jest dla danego typu ubezpieczenia.
 **/
-
 	set ansi_nulls on
 	go
 	set quoted_identifier on
@@ -150,13 +210,15 @@ Oblicza wartoœæ ubezpieczneia na podstawie wartoœci kredytu i procentu jaki usta
 				select @id = coalesce((select max(loan_id) + 1 from Loan), 1)
 				if @loan_insurence_type IS NOT NULL
 					begin
+						exec @loan_insurance = AddLoanInsurence  @amount, @loan_insurence_type, @id, @loan_type
 						exec @rrso = CalculateRRSO  @amount, @number_of_loan_installment, @loan_type, @loan_insurence_type
 					end
 				else
 					begin
+						exec @loan_insurance = AddLoanInsurence  @amount, 4, @id, @loan_type
 						exec @rrso = CalculateRRSO  @amount, @number_of_loan_installment, @loan_type, 4
 					end
-				exec @loan_insurance = AddLoanInsurence  @amount, 4, @id, @loan_type
+				
 				exec @loan_installment = CalculateLoanInstallment  @amount, @number_of_loan_installment,  @rrso
 				
 				insert into Loan(loan_id, amount, current_amount, rrso, number_of_loan_installment, loan_installment, loan_type, loan_status, currency, loan_insurance, account)  
@@ -169,10 +231,10 @@ Oblicza wartoœæ ubezpieczneia na podstawie wartoœci kredytu i procentu jaki usta
 	go
 
 	/* Execute ApplyForLoan */
-	use LoanModule
-	go  
-	exec dbo.ApplyForLoan @amount=90000, @number_of_loan_installment = 10, @loan_type=1, @currency=1, @loan_insurence_type=1, @account_id=0
-	select * from Loan
+	--use LoanModule
+	--go  
+	--exec dbo.ApplyForLoan @amount=90000, @number_of_loan_installment = 10, @loan_type=1, @currency=1, @loan_insurence_type=1, @account_id=0
+	--select * from Loan
 
 /* Procedura zmiany statusu kredytu */
 /** 
@@ -218,10 +280,10 @@ SET ANSI_NULLS ON
 	GO
 
 	/* Execute ChangeLoanStatus */
-	USE LoanModule
-	GO  
-	EXEC dbo.ChangeLoanStatus  @loan_id = 2, @loan_status = 0
-	SELECT * FROM Loan
+	--USE LoanModule
+	--GO  
+	--EXEC dbo.ChangeLoanStatus  @loan_id = 2, @loan_status = 0
+	--SELECT * FROM Loan
 
 
 /* Procedura dodania sp³aty kredytu */
@@ -258,12 +320,13 @@ W przeciwnym wypadku rzuca wyj¹tkiem o braku mo¿liwoœæi dokonania sp³aty dla inn
 	go
 
 	/* Execute RepayLoan */
-	USE LoanModule
-	GO  
-	EXEC dbo.RepayLoan @loan_id = 2
+	--USE LoanModule
+	--GO  
+	--EXEC dbo.RepayLoan @loan_id = '1'
 	
-	SELECT * FROM Loan
-	SELECT * FROM RepaymentEvent
+	--SELECT * FROM Loan
+	--SELECT * FROM LoanInsurance
+	--SELECT * FROM RepaymentEvent
 
 
 /* Procedura wyœwietlenia historii sp³aty kredytu */
@@ -282,9 +345,9 @@ W przeciwnym wypadku rzuca wyj¹tkiem o braku mo¿liwoœæi dokonania sp³aty dla inn
 	GO
 
 	/* Execute GetRepaymentHistory */
-	USE LoanModule
-	GO  
-	EXEC dbo.GetRepaymentHistory @loanId=0
+	--USE LoanModule
+	--GO  
+	--EXEC dbo.GetRepaymentHistory @loanId=0
 
 
 /* Procedura wyœwietlenia informacji o kredytach konta */
@@ -304,9 +367,9 @@ W przeciwnym wypadku rzuca wyj¹tkiem o braku mo¿liwoœæi dokonania sp³aty dla inn
 	GO
 
 	/* Execute GetLoanInformationForAccount */
-	USE LoanModule
-	GO  
-    EXEC dbo.GetLoanInformationForAccount @account_id=0
+	--USE LoanModule
+	--GO  
+ --   EXEC dbo.GetLoanInformationForAccount @account_id=0
 	
 
 /* Wyœwietl dokumenty dotycz¹ce kredytu */
@@ -326,9 +389,9 @@ W przeciwnym wypadku rzuca wyj¹tkiem o braku mo¿liwoœæi dokonania sp³aty dla inn
 	GO
 
 	/* Execute GetLoanDocuments */
-	USE LoanModule
-	GO  
-    EXEC dbo.GetLoanDocuments @loan_id=0
+	--USE LoanModule
+	--GO  
+ --   EXEC dbo.GetLoanDocuments @loan_id=0
 	
 
 /* Procedura dodania dokumentu dla kredytu */
@@ -351,10 +414,10 @@ W przeciwnym wypadku rzuca wyj¹tkiem o braku mo¿liwoœæi dokonania sp³aty dla inn
 	GO
 
 	/* Execute AddLoanDocument */
-	USE LoanModule
-	GO  
-	EXEC dbo.AddLoanDocument @loanId=0, @loanDocumentType=1, @content='text'
-	SELECT * FROM LoanDocument 
+	--USE LoanModule
+	--GO  
+	--EXEC dbo.AddLoanDocument @loanId=0, @loanDocumentType=1, @content='text'
+	--SELECT * FROM LoanDocument 
 
 /* Procedura usuniêcia dokumentu dla kredytu */
 
@@ -375,10 +438,10 @@ W przeciwnym wypadku rzuca wyj¹tkiem o braku mo¿liwoœæi dokonania sp³aty dla inn
 	GO
 
 	/* Execute DeleteLoanDocument */
-	USE LoanModule
-	GO  
-	EXEC dbo.DeleteLoanDocument @loanDocumentId=0
-	SELECT * FROM LoanDocument 
+	--USE LoanModule
+	--GO  
+	--EXEC dbo.DeleteLoanDocument @loanDocumentId=0
+	--SELECT * FROM LoanDocument 
 
 /* Procedura zmiany statusu wp³aty */
 /** 
@@ -431,10 +494,10 @@ ALTER DATABASE LoanModule SET READ_WRITE
 GO
 
 	/* Execute [ChangeRepaymentStatus] */
-	USE LoanModule
-	GO  
-	EXEC dbo.[ChangeRepaymentStatus] @repayment_id = 11 , @repayment_status = 1
-	SELECT * FROM RepaymentEvent
-	SELECT * FROM Loan
+	--USE LoanModule
+	--GO  
+	--EXEC dbo.[ChangeRepaymentStatus] @repayment_id = 11 , @repayment_status = 1
+	--SELECT * FROM RepaymentEvent
+	--SELECT * FROM Loan
 
 
