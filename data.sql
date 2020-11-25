@@ -13,7 +13,8 @@ VALUES (0, 'Repayed'),
 	   (2, 'Active'),
        (3, 'Delinquency and Default'),
 	   (4, 'Deferment and Forebearance'),
-       (5, 'Grace Period')
+       (5, 'Grace Period'),
+	   (6, 'Denied')
 
 INSERT INTO RepaymentEventStatus(repayment_event_status_id,name)
 VALUES (0, 'Pending'),

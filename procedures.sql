@@ -241,6 +241,7 @@ Oblicza wartoœæ ubezpieczneia na podstawie wartoœci kredytu i procentu jaki usta
 Procedura zmiany statusu kredytu.
 Umo¿liwia nastêpuj¹ce zmiany statusów:
 	Pending -> Active
+	Pending -> Denied
 	Active -> Repayed
 	Delinquency and Default -> Repayed
 	Deferment and Forebearance -> Repayed
@@ -251,6 +252,7 @@ Uniemo¿liwia:
 	Deferment and Forebearance -> Pending
 	Grace Period -> Pending
 	Repayed -> inne
+	Denied -> inne
 	
 Rzuca wyj¹tkiem jak przejœcie jest niemo¿liwe
 **/
@@ -267,7 +269,7 @@ SET ANSI_NULLS ON
 			SELECT @current_amount = coalesce((SELECT TOP 1 current_amount FROM Loan WHERE loan_id = @loan_id), NULL)
 			SELECT @msg += @current_status_name + ' to ' + @loan_status_name
 
-			if((@current_status = 1 AND @loan_status = 2) OR (@current_status IN(2,3,4,5) AND (@loan_status NOT IN(0,1) OR (@loan_status = 0 AND @current_amount=0))) )
+			if((@current_status = 1 AND @loan_status IN( 2,6)) OR (@current_status IN(2,3,4,5) AND (@loan_status NOT IN(0,1) OR (@loan_status = 0 AND @current_amount=0))) )
 				BEGIN
 				UPDATE Loan SET loan_status = @loan_status WHERE loan_id = @loan_id
 				END
@@ -282,7 +284,7 @@ SET ANSI_NULLS ON
 	/* Execute ChangeLoanStatus */
 	--USE LoanModule
 	--GO  
-	--EXEC dbo.ChangeLoanStatus  @loan_id = 2, @loan_status = 0
+	--EXEC dbo.ChangeLoanStatus  @loan_id = 2, @loan_status = 4
 	--SELECT * FROM Loan
 
 
