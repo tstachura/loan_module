@@ -150,7 +150,3 @@ VALUES (0, 'Identity proof content', 0, 0),
 	   (45, 'Address proof content', 1, 11),
 	   (46, 'Bank statement content', 2, 11),
 	   (47, 'Salary certificate content', 3, 11)
-		  
-
-
-	 
